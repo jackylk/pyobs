@@ -1,6 +1,6 @@
 # PyOBS Performance Benchmark Report
 
-**Generated:** 2026-02-06 14:15:50
+**Generated:** 2026-02-06 16:26:36
 
 ## Test Environment
 
@@ -21,32 +21,59 @@ All benchmarks measure the time taken for individual operations. Lower is better
 
 | Benchmark | Mean | Std Dev | Throughput |
 |-----------|------|---------|------------|
-| Join paths | 206.50 ns | ±29.95 ns | 4,842,533 ops/s |
-| Get parent path | 389.74 ns | ±72.58 ns | 2,565,842 ops/s |
-| Get filename | 288.33 ns | ±81.90 ns | 3,468,244 ops/s |
+| Join paths | 199.01 ns | ±12.09 ns | 5,024,864 ops/s |
+| Get parent path | 451.91 ns | ±107.60 ns | 2,212,843 ops/s |
+| Get filename | 240.98 ns | ±19.87 ns | 4,149,712 ops/s |
 
-### Obs Operations
-
-| Benchmark | Mean | Std Dev | Throughput |
-|-----------|------|---------|------------|
-| Write 1KB file | 203.93 ms | ±16.17 ms | 0.00 MB/s |
-| Write 1MB file | 502.26 ms | ±59.37 ms | 1.99 MB/s |
-| Read 1KB file | 205.60 ms | ±12.82 ms | 0.00 MB/s |
-| Read 1MB file | 497.66 ms | ±31.12 ms | 2.01 MB/s |
-| Get file stat | 212.77 ms | ±47.95 ms | 5 ops/s |
-| Check exists | 202.40 ms | ±18.41 ms | 5 ops/s |
-| List 100 files | 267.83 ms | ±29.02 ms | 4 ops/s |
-| Delete file | 245.80 ms | ±81.15 ms | 4 ops/s |
-| Copy 1MB file | 812.75 ms | ±23.10 ms | 1.23 MB/s |
-
-### Obs_Concurrent Operations
+### Cache Operations
 
 | Benchmark | Mean | Std Dev | Throughput |
 |-----------|------|---------|------------|
-| Concurrent read 1MB (1 threads) | 1.52 MB/s | ±0.01 MB/s | - |
-| Concurrent read 1MB (4 threads) | 1.94 MB/s | ±0.04 MB/s | - |
-| Concurrent write 1MB (1 threads) | 1.38 MB/s | ±0.08 MB/s | - |
-| Concurrent write 1MB (4 threads) | 1.38 MB/s | ±0.23 MB/s | - |
+| Create inode | 3.51 µs | ±867.85 µs | 285,040 ops/s |
+| Lookup existing inode | 643.06 ns | ±235.60 ns | 1,555,064 ops/s |
+| Get path from inode | 480.65 ns | ±29.66 ns | 2,080,536 ops/s |
+| Update inode size | 753.74 ns | ±54.91 ns | 1,326,714 ops/s |
+| Rename inode | 2.29 µs | ±380.03 µs | 437,104 ops/s |
+| Put metadata | 3.08 µs | ±493.45 µs | 324,262 ops/s |
+| Get metadata (hit) | 879.67 ns | ±102.48 ns | 1,136,789 ops/s |
+| Get metadata (miss) | 663.09 ns | ±9.86 ns | 1,508,101 ops/s |
+| Put directory listing | 3.86 µs | ±127.17 µs | 258,875 ops/s |
+| Get directory (hit) | 778.34 ns | ±4.26 ns | 1,284,780 ops/s |
+| Put 4KB block | 2.84 µs | ±53.08 µs | 352,040 ops/s |
+| Put 64KB block | 4.39 µs | ±2.71 µs | 227,620 ops/s |
+| Get 4KB block (hit) | 1.77 µs | ±34.37 µs | 564,422 ops/s |
+| Get 64KB block (hit) | 1.98 µs | ±353.03 µs | 503,865 ops/s |
+| Invalidate inode cache | 226.45 µs | ±15.94 µs | 4,416 ops/s |
+| Join paths | 184.70 ns | ±18.00 ns | 5,414,156 ops/s |
+| Get parent path | 307.64 ns | ±1.35 ns | 3,250,598 ops/s |
+| Get file name | 202.18 ns | ±12.73 ns | 4,946,010 ops/s |
+| Join deep paths | 176.30 ns | ±18.63 ns | 5,672,091 ops/s |
+| Get deep parent path | 372.62 ns | ±126.41 ns | 2,683,692 ops/s |
+| Record read | 1.06 µs | ±151.06 µs | 944,255 ops/s |
+| Sequential detection | 1.70 µs | ±992.08 µs | 589,180 ops/s |
+| Store prefetch | 1.55 µs | ±257.44 µs | 643,541 ops/s |
+| Get prefetch (hit) | 1.91 µs | ±45.79 µs | 522,713 ops/s |
+
+### Concurrent Operations
+
+| Benchmark | Mean | Std Dev | Throughput |
+|-----------|------|---------|------------|
+| Concurrent inode create (1 threads) | 46.93 µs | ±6.95 µs | 21,310 ops/s |
+| Concurrent inode create (2 threads) | 34.24 µs | ±1.91 µs | 29,205 ops/s |
+| Concurrent inode create (4 threads) | 32.28 µs | ±1.00 µs | 30,978 ops/s |
+| Concurrent inode create (8 threads) | 32.22 µs | ±1.28 µs | 31,036 ops/s |
+| Concurrent inode lookup (1 threads) | 19.58 µs | ±5.11 µs | 51,076 ops/s |
+| Concurrent inode lookup (2 threads) | 16.41 µs | ±459.28 µs | 60,941 ops/s |
+| Concurrent inode lookup (4 threads) | 15.87 µs | ±578.32 µs | 63,009 ops/s |
+| Concurrent inode lookup (8 threads) | 23.25 µs | ±10.37 µs | 43,003 ops/s |
+| Concurrent cache get (1 threads) | 24.24 µs | ±4.59 µs | 41,252 ops/s |
+| Concurrent cache get (2 threads) | 22.54 µs | ±1.46 µs | 44,366 ops/s |
+| Concurrent cache get (4 threads) | 21.03 µs | ±3.78 µs | 47,543 ops/s |
+| Concurrent cache get (8 threads) | 18.67 µs | ±640.62 µs | 53,568 ops/s |
+| Concurrent cache put (1 threads) | 22.75 µs | ±816.10 µs | 43,962 ops/s |
+| Concurrent cache put (2 threads) | 22.36 µs | ±824.61 µs | 44,718 ops/s |
+| Concurrent cache put (4 threads) | 27.41 µs | ±83.12 µs | 36,485 ops/s |
+| Concurrent cache put (8 threads) | 21.94 µs | ±3.54 µs | 45,574 ops/s |
 
 ## Notes
 
