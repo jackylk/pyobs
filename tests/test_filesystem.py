@@ -171,7 +171,8 @@ class TestPathManipulation:
         assert get_parent_path("bucket/path/to/file.txt") == "bucket/path/to"
         assert get_parent_path("bucket/file.txt") == "bucket"
         assert get_parent_path("bucket") == ""
-        assert get_parent_path("bucket/dir/") == "bucket/dir"
+        # "bucket/dir/" with trailing slash: after rstrip becomes "bucket/dir", parent is "bucket"
+        assert get_parent_path("bucket/dir/") == "bucket"
 
 
 class TestGetCredentialsFromEnv:
@@ -279,27 +280,30 @@ class TestOBSFileSystemInit:
 
     def test_init_missing_key(self, mock_obs_client):
         """Test initialization fails without access key."""
-        with pytest.raises(ValueError, match="access key is required"):
-            OBSFileSystem(
-                secret="test-secret",
-                endpoint="https://obs.cn-north-4.myhuaweicloud.com",
-            )
+        with patch.dict('os.environ', {}, clear=True):
+            with pytest.raises(ValueError, match="access key is required"):
+                OBSFileSystem(
+                    secret="test-secret",
+                    endpoint="https://obs.cn-north-4.myhuaweicloud.com",
+                )
 
     def test_init_missing_secret(self, mock_obs_client):
         """Test initialization fails without secret key."""
-        with pytest.raises(ValueError, match="secret key is required"):
-            OBSFileSystem(
-                key="test-key",
-                endpoint="https://obs.cn-north-4.myhuaweicloud.com",
-            )
+        with patch.dict('os.environ', {}, clear=True):
+            with pytest.raises(ValueError, match="secret key is required"):
+                OBSFileSystem(
+                    key="test-key",
+                    endpoint="https://obs.cn-north-4.myhuaweicloud.com",
+                )
 
     def test_init_missing_endpoint(self, mock_obs_client):
         """Test initialization fails without endpoint."""
-        with pytest.raises(ValueError, match="endpoint is required"):
-            OBSFileSystem(
-                key="test-key",
-                secret="test-secret",
-            )
+        with patch.dict('os.environ', {}, clear=True):
+            with pytest.raises(ValueError, match="endpoint is required"):
+                OBSFileSystem(
+                    key="test-key",
+                    secret="test-secret",
+                )
 
     def test_init_from_env_vars(self, mock_obs_client):
         """Test initialization from environment variables."""

@@ -1,0 +1,206 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OBS Filesystem Benchmark Specification",
+  "version": "1.0.0",
+  "description": "Shared benchmark specification for obsfuse (Rust) and pyobs (Python)",
+  "config": {
+    "modes": {
+      "quick": {
+        "sample_size": 10,
+        "measurement_time_sec": 1,
+        "warmup_time_sec": 1
+      },
+      "normal": {
+        "sample_size": 50,
+        "measurement_time_sec": 5,
+        "warmup_time_sec": 3
+      },
+      "full": {
+        "sample_size": 100,
+        "measurement_time_sec": 10,
+        "warmup_time_sec": 5
+      }
+    },
+    "concurrent_levels": [1, 2, 4, 8, 16, 32],
+    "file_sizes": {
+      "tiny": 1,
+      "small": 1024,
+      "medium": 65536,
+      "large": 1048576,
+      "xlarge": 104857600
+    },
+    "regression_thresholds": {
+      "warning_percent": 10,
+      "failure_percent": 20
+    }
+  },
+  "benchmark_suites": [
+    {
+      "id": "path",
+      "name": "Path Operations",
+      "category": "local",
+      "benchmarks": [
+        {
+          "id": "path/split",
+          "name": "Split path",
+          "description": "Measure time to split path into bucket and key",
+          "operation": "split_path",
+          "expected_ops_per_sec": 5000000,
+          "unit": "ops/sec"
+        },
+        {
+          "id": "path/join",
+          "name": "Join paths",
+          "description": "Measure time to join bucket and key",
+          "operation": "join_path",
+          "expected_ops_per_sec": 5000000,
+          "unit": "ops/sec"
+        },
+        {
+          "id": "path/normalize",
+          "name": "Normalize path",
+          "description": "Measure time to normalize path",
+          "operation": "normalize_path",
+          "expected_ops_per_sec": 5000000,
+          "unit": "ops/sec"
+        },
+        {
+          "id": "path/parent",
+          "name": "Get parent path",
+          "description": "Measure time to get parent path",
+          "operation": "get_parent_path",
+          "expected_ops_per_sec": 5000000,
+          "unit": "ops/sec"
+        }
+      ]
+    },
+    {
+      "id": "obs",
+      "name": "OBS Integration",
+      "category": "obs",
+      "requires_credentials": true,
+      "benchmarks": [
+        {
+          "id": "obs/write_1KB",
+          "name": "Write 1KB file",
+          "description": "Measure small file write latency",
+          "operation": "write",
+          "data_size": 1024,
+          "unit": "ms"
+        },
+        {
+          "id": "obs/write_1MB",
+          "name": "Write 1MB file",
+          "description": "Measure medium file write throughput",
+          "operation": "write",
+          "data_size": 1048576,
+          "unit": "MB/s"
+        },
+        {
+          "id": "obs/write_100MB",
+          "name": "Write 100MB file",
+          "description": "Measure large file write throughput",
+          "operation": "write",
+          "data_size": 104857600,
+          "unit": "MB/s"
+        },
+        {
+          "id": "obs/read_1KB",
+          "name": "Read 1KB file",
+          "description": "Measure small file read latency",
+          "operation": "read",
+          "data_size": 1024,
+          "unit": "ms"
+        },
+        {
+          "id": "obs/read_1MB",
+          "name": "Read 1MB file",
+          "description": "Measure medium file read throughput",
+          "operation": "read",
+          "data_size": 1048576,
+          "unit": "MB/s"
+        },
+        {
+          "id": "obs/read_100MB",
+          "name": "Read 100MB file",
+          "description": "Measure large file read throughput",
+          "operation": "read",
+          "data_size": 104857600,
+          "unit": "MB/s"
+        },
+        {
+          "id": "obs/read_range",
+          "name": "Range read 64KB",
+          "description": "Measure range read performance",
+          "operation": "read_range",
+          "data_size": 65536,
+          "unit": "ms"
+        },
+        {
+          "id": "obs/stat",
+          "name": "Get file stat",
+          "description": "Measure metadata retrieval latency",
+          "operation": "stat",
+          "unit": "ms"
+        },
+        {
+          "id": "obs/list_100",
+          "name": "List directory (100 files)",
+          "description": "Measure directory listing time",
+          "operation": "list",
+          "file_count": 100,
+          "unit": "ms"
+        },
+        {
+          "id": "obs/delete",
+          "name": "Delete file",
+          "description": "Measure file deletion latency",
+          "operation": "delete",
+          "unit": "ms"
+        },
+        {
+          "id": "obs/copy",
+          "name": "Copy 1MB file",
+          "description": "Measure file copy throughput",
+          "operation": "copy",
+          "data_size": 1048576,
+          "unit": "MB/s"
+        }
+      ]
+    },
+    {
+      "id": "obs_concurrent",
+      "name": "OBS Concurrent Operations",
+      "category": "obs",
+      "requires_credentials": true,
+      "benchmarks": [
+        {
+          "id": "obs_concurrent/read_1MB",
+          "name": "Concurrent read 1MB",
+          "description": "Measure concurrent read throughput",
+          "operation": "read",
+          "data_size": 1048576,
+          "concurrent_levels": [1, 4, 8, 16, 32],
+          "unit": "MB/s"
+        },
+        {
+          "id": "obs_concurrent/write_1MB",
+          "name": "Concurrent write 1MB",
+          "description": "Measure concurrent write throughput",
+          "operation": "write",
+          "data_size": 1048576,
+          "concurrent_levels": [1, 4, 8, 16, 32],
+          "unit": "MB/s"
+        },
+        {
+          "id": "obs_concurrent/mixed",
+          "name": "Mixed read-write",
+          "description": "80% read, 20% write concurrent workload",
+          "operations": ["read", "write"],
+          "read_write_ratio": "80:20",
+          "concurrent_levels": [1, 4, 8, 16, 32]
+        }
+      ]
+    }
+  ]
+}

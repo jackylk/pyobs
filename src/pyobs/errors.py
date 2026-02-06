@@ -53,7 +53,10 @@ class OBSUploadError(OBSError):
 
     def __init__(self, path: str, message: str | None = None):
         self.path = path
-        msg = message or f"Upload failed: {path}"
+        if message:
+            msg = f"{message}: {path}"
+        else:
+            msg = f"Upload failed: {path}"
         super().__init__(msg)
 
 

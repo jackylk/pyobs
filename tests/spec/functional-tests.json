@@ -1,0 +1,237 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OBS Filesystem Functional Test Specification",
+  "version": "1.0.0",
+  "description": "Shared test specification for obsfuse (Rust) and pyobs (Python)",
+  "config": {
+    "test_prefix_template": "{project}-functest-{timestamp}",
+    "default_timeout_ms": 30000,
+    "concurrent_levels": [1, 2, 4, 8],
+    "file_sizes": {
+      "tiny": 1,
+      "small": 1024,
+      "medium": 1048576,
+      "large": 104857600,
+      "huge": 5368709120
+    },
+    "huge_file_optional": true
+  },
+  "test_suites": [
+    {
+      "id": "file_operations",
+      "name": "File Operations",
+      "tests": [
+        {
+          "id": "F-C-01",
+          "name": "create_empty_file",
+          "category": "create",
+          "description": "Create an empty file"
+        },
+        {
+          "id": "F-C-02",
+          "name": "create_with_content",
+          "category": "create",
+          "description": "Create a file with content"
+        },
+        {
+          "id": "F-C-03",
+          "name": "create_in_subdir",
+          "category": "create",
+          "description": "Create a file in subdirectory"
+        },
+        {
+          "id": "F-C-04",
+          "name": "create_special_chars",
+          "category": "create",
+          "description": "Create file with special characters in name"
+        },
+        {
+          "id": "F-R-01",
+          "name": "read_full_file",
+          "category": "read",
+          "description": "Read entire file content"
+        },
+        {
+          "id": "F-R-02",
+          "name": "read_partial_start",
+          "category": "read",
+          "description": "Read partial file from start"
+        },
+        {
+          "id": "F-R-03",
+          "name": "read_partial_middle",
+          "category": "read",
+          "description": "Read partial file from middle"
+        },
+        {
+          "id": "F-R-04",
+          "name": "read_partial_end",
+          "category": "read",
+          "description": "Read partial file from end"
+        },
+        {
+          "id": "F-R-05",
+          "name": "read_beyond_eof",
+          "category": "read",
+          "description": "Read beyond end of file"
+        },
+        {
+          "id": "F-R-06",
+          "name": "read_empty_file",
+          "category": "read",
+          "description": "Read empty file"
+        },
+        {
+          "id": "F-R-07",
+          "name": "read_large_file",
+          "category": "read",
+          "description": "Read large file (100MB)"
+        },
+        {
+          "id": "F-R-08",
+          "name": "read_nonexistent",
+          "category": "read",
+          "description": "Read non-existent file"
+        },
+        {
+          "id": "F-W-01",
+          "name": "write_new_file",
+          "category": "write",
+          "description": "Write to new file"
+        },
+        {
+          "id": "F-W-02",
+          "name": "write_overwrite",
+          "category": "write",
+          "description": "Overwrite existing file"
+        },
+        {
+          "id": "F-W-05",
+          "name": "write_large_file",
+          "category": "write",
+          "description": "Write large file (100MB)"
+        },
+        {
+          "id": "F-W-06",
+          "name": "write_binary_data",
+          "category": "write",
+          "description": "Write binary data"
+        },
+        {
+          "id": "F-D-01",
+          "name": "delete_file",
+          "category": "delete",
+          "description": "Delete existing file"
+        },
+        {
+          "id": "F-D-02",
+          "name": "delete_nonexistent",
+          "category": "delete",
+          "description": "Delete non-existent file"
+        },
+        {
+          "id": "F-M-01",
+          "name": "stat_file",
+          "category": "metadata",
+          "description": "Get file status"
+        },
+        {
+          "id": "F-M-03",
+          "name": "exists_check",
+          "category": "metadata",
+          "description": "Check file existence"
+        }
+      ]
+    },
+    {
+      "id": "directory_operations",
+      "name": "Directory Operations",
+      "tests": [
+        {
+          "id": "D-C-01",
+          "name": "mkdir_simple",
+          "category": "create",
+          "description": "Create simple directory"
+        },
+        {
+          "id": "D-C-02",
+          "name": "mkdir_nested",
+          "category": "create",
+          "description": "Create nested directories"
+        },
+        {
+          "id": "D-L-01",
+          "name": "list_empty_dir",
+          "category": "list",
+          "description": "List empty directory"
+        },
+        {
+          "id": "D-L-02",
+          "name": "list_with_files",
+          "category": "list",
+          "description": "List directory with files"
+        },
+        {
+          "id": "D-L-05",
+          "name": "list_large_dir",
+          "category": "list",
+          "description": "List directory with 1000+ entries"
+        },
+        {
+          "id": "D-D-01",
+          "name": "rmdir_empty",
+          "category": "delete",
+          "description": "Remove empty directory"
+        }
+      ]
+    },
+    {
+      "id": "copy_operations",
+      "name": "Copy Operations",
+      "tests": [
+        {
+          "id": "C-01",
+          "name": "copy_file",
+          "category": "copy",
+          "description": "Copy file"
+        },
+        {
+          "id": "C-02",
+          "name": "copy_large_file",
+          "category": "copy",
+          "description": "Copy large file (100MB)"
+        }
+      ]
+    },
+    {
+      "id": "consistency",
+      "name": "Consistency Tests",
+      "tests": [
+        {
+          "id": "CS-01",
+          "name": "raw_single",
+          "category": "read_after_write",
+          "description": "Single-thread read-after-write consistency"
+        },
+        {
+          "id": "CS-02",
+          "name": "raw_concurrent",
+          "category": "read_after_write",
+          "description": "Multi-thread read-after-write consistency"
+        },
+        {
+          "id": "CS-06",
+          "name": "create_visible",
+          "category": "metadata",
+          "description": "File visible immediately after creation"
+        },
+        {
+          "id": "CS-07",
+          "name": "delete_invisible",
+          "category": "metadata",
+          "description": "File invisible immediately after deletion"
+        }
+      ]
+    }
+  ]
+}
