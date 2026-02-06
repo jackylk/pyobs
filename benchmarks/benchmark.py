@@ -387,7 +387,7 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
         print("Running metadata operation benchmarks...")
 
         runner.bench(
-            "info",
+            "stat",
             "obs_metadata",
             lambda: fs.info(f"{test_prefix}/read_1MB"),
             iterations=50,
@@ -402,13 +402,30 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             warmup=5,
         )
 
+        # Mkdir benchmark
+        print("Running mkdir benchmark...")
+        mkdir_counter = [0]
+
+        def mkdir_bench():
+            path = f"{test_prefix}/mkdir_bench_{mkdir_counter[0]}/"
+            mkdir_counter[0] += 1
+            fs.mkdir(path)
+
+        runner.bench(
+            "mkdir",
+            "obs_operations",
+            mkdir_bench,
+            iterations=30,
+            warmup=3,
+        )
+
         # List benchmarks
         print("Preparing files for list benchmark...")
         for i in range(100):
             fs.pipe_file(f"{test_prefix}/list_dir/file_{i:03d}.txt", b"test")
 
         runner.bench(
-            "list_100_files",
+            "list_100",
             "obs_metadata",
             lambda: fs.ls(f"{test_prefix}/list_dir/"),
             iterations=30,
@@ -443,7 +460,7 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             fs.cp_file(f"{test_prefix}/read_1MB", dst)
 
         runner.bench(
-            "copy_1MB",
+            "copy",
             "obs_operations",
             copy_bench,
             iterations=20,
@@ -587,11 +604,24 @@ def generate_report(report: BenchmarkReport, output_dir: Path) -> None:
     """Generate benchmark reports in multiple formats."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # JSON report
+    # JSON report (full)
     json_path = output_dir / "benchmark-data.json"
     with open(json_path, "w") as f:
         json.dump(asdict(report), f, indent=2, default=str)
     print(f"JSON report: {json_path}")
+
+    # Simplified JSON (compatible with obsfuse format for comparison site)
+    simple_path = output_dir / "benchmark-simple.json"
+    benchmarks = {}
+    for r in report.results:
+        benchmarks[r.name] = {
+            "mean_ns": r.mean_time_sec * 1e9,
+            "std_dev_ns": r.std_dev_sec * 1e9,
+            "median_ns": r.median_time_sec * 1e9,
+        }
+    with open(simple_path, "w") as f:
+        json.dump({"timestamp": report.timestamp, "benchmarks": benchmarks}, f, indent=2)
+    print(f"Simple JSON report: {simple_path}")
 
     # Markdown report
     md_path = output_dir / "benchmark-report.md"
