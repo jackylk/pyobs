@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyobs"
+dynamic = ["version"]
+description = "Huawei Cloud OBS filesystem implementation for fsspec"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.8"
+authors = [
+    {name = "pyobs contributors"}
+]
+keywords = ["fsspec", "huawei", "obs", "cloud", "storage", "filesystem"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Filesystems",
+]
+dependencies = [
+    "fsspec>=2023.1.0",
+    "esdk-obs-python>=3.21.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+]
+
+[project.entry-points."fsspec.specs"]
+obs = "pyobs:OBSFileSystem"
+hwobs = "pyobs:OBSFileSystem"
+
+[project.urls]
+Homepage = "https://github.com/pyobs/pyobs"
+Documentation = "https://github.com/pyobs/pyobs#readme"
+Repository = "https://github.com/pyobs/pyobs"
+
+[tool.setuptools.dynamic]
+version = {attr = "pyobs._version.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration tests (require real OBS credentials)",
+]

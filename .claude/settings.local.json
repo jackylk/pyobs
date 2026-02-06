@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:support.huaweicloud.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:filesystem-spec.readthedocs.io)",
+      "WebFetch(domain:s3fs.readthedocs.io)",
+      "WebFetch(domain:docs.ray.io)",
+      "WebFetch(domain:cloud.baidu.com)",
+      "WebFetch(domain:docs.rayai.org.cn)",
+      "WebFetch(domain:www.cnblogs.com)",
+      "WebFetch(domain:juejin.cn)",
+      "WebFetch(domain:www.huaweicloud.com)",
+      "WebFetch(domain:bbs.huaweicloud.com)",
+      "WebFetch(domain:blog.csdn.net)",
+      "Bash(python3:*)",
+      "Bash(pip show:*)",
+      "Bash(pip3 show:*)",
+      "WebFetch(domain:doc.hcs.huawei.com)",
+      "Bash(python -m py_compile:*)",
+      "Bash(pip install:*)",
+      "Bash(python -c:*)",
+      "Bash(pytest:*)"
+    ]
+  }
+}
