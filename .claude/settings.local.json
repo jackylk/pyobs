@@ -21,7 +21,19 @@
       "Bash(python -m py_compile:*)",
       "Bash(pip install:*)",
       "Bash(python -c:*)",
-      "Bash(pytest:*)"
+      "Bash(pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(set -a)",
+      "Bash(source .env)",
+      "Bash(set +a)",
+      "Bash(python -m benchmarks.benchmark:*)",
+      "Bash(chmod:*)",
+      "Bash(source:*)",
+      "Bash(python scripts/generate_test_summary.py:*)",
+      "Bash(git add:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd benchmark and functional test framework with obsfuse-compatible reports\n\n- Add benchmark tests for path operations and OBS integration\n- Add functional tests for file operations, metadata, and consistency\n- Create test specification files \\(benchmark-spec.json, functional-tests.json\\)\n- Generate test reports in test-reports/ directory matching obsfuse format\n- Move architecture.md from docs/ to doc/ directory\n- Add design documents for benchmark and functional tests\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)"
     ]
   }
 }
