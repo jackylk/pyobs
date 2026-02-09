@@ -178,7 +178,7 @@ def mock_obs_client() -> Generator[MagicMock, None, None]:
 @pytest.fixture
 def obs_fs(mock_obs_client: MagicMock):
     """Create an OBSFileSystem instance with mocked client."""
-    from obsfs import OBSFileSystem
+    from pyobsfs import OBSFileSystem
 
     # Use skip_instance_cache to avoid caching issues in tests
     fs = OBSFileSystem(
@@ -216,6 +216,6 @@ def integration_fs(obs_credentials: Dict[str, str]):
     if not all([obs_credentials["key"], obs_credentials["secret"], obs_credentials["endpoint"]]):
         pytest.skip("OBS credentials not available")
 
-    from obsfs import OBSFileSystem
+    from pyobsfs import OBSFileSystem
 
     return OBSFileSystem(**obs_credentials)

@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch, call
 
 import pytest
 
-from obsfs import (
+from pyobsfs import (
     OBSFileSystem,
     OBSFile,
     OBSError,
@@ -29,7 +29,7 @@ from obsfs import (
     OBSUploadError,
     OBSMultipartError,
 )
-from obsfs.utils import (
+from pyobsfs.utils import (
     split_path,
     normalize_path,
     join_path,

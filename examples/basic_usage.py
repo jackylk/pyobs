@@ -40,7 +40,7 @@ def main():
     # =========================================================================
     print("\n=== 写入文件 ===")
     test_path = f"{bucket}/pyobs-example/hello.txt"
-    content = b"Hello, OBS! This is a test file from obsfs."
+    content = b"Hello, OBS! This is a test file from pyobsfs."
 
     try:
         fs.pipe_file(test_path, content)

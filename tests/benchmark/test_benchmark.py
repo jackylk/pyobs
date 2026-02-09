@@ -25,8 +25,8 @@ import pytest
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from obsfs import OBSFileSystem
-from obsfs.utils import get_parent_path, join_path
+from pyobsfs import OBSFileSystem
+from pyobsfs.utils import get_parent_path, join_path
 
 # Import shared benchmark infrastructure from conftest
 from .conftest import BenchmarkConfig, BenchmarkResult, BenchmarkRunner

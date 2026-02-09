@@ -71,7 +71,7 @@ def test_write_file(fs, bucket):
 
     # 写入简单文本文件
     path = get_test_path(bucket, "files", "hello.txt")
-    content = "你好，pyobs！这是一个测试文件。\nHello from obsfs!"
+    content = "你好，pyobs！这是一个测试文件。\nHello from pyobsfs!"
     fs.pipe_file(path, content.encode('utf-8'))
     print(f"✓ 已写入: {path}")
 

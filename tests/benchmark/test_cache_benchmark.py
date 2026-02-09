@@ -29,7 +29,7 @@ import pytest
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from obsfs.cache import (
+from pyobsfs.cache import (
     DataCache,
     DataCacheConfig,
     InodeManager,
@@ -38,7 +38,7 @@ from obsfs.cache import (
     ReadaheadConfig,
     ReadaheadManager,
 )
-from obsfs.utils import get_parent_path, join_path
+from pyobsfs.utils import get_parent_path, join_path
 
 from .conftest import BenchmarkConfig, BenchmarkResult, BenchmarkRunner
 
