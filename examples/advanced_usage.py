@@ -187,7 +187,7 @@ def example_error_handling():
     """示例: 错误处理。"""
     print("\n=== 错误处理 ===")
 
-    from pyobs import (
+    from obsfs import (
         OBSError,
         OBSFileNotFoundError,
         OBSPermissionError,

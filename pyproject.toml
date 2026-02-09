@@ -3,11 +3,11 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyobs"
+name = "obsfs"
 dynamic = ["version"]
 description = "Huawei Cloud OBS filesystem implementation for fsspec"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 requires-python = ">=3.8"
 authors = [
     {name = "pyobs contributors"}
@@ -16,7 +16,6 @@ keywords = ["fsspec", "huawei", "obs", "cloud", "storage", "filesystem"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -36,19 +35,20 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
+    "requests>=2.28.0",
 ]
 
 [project.entry-points."fsspec.specs"]
-obs = "pyobs:OBSFileSystem"
-hwobs = "pyobs:OBSFileSystem"
+obs = "obsfs:OBSFileSystem"
+hwobs = "obsfs:OBSFileSystem"
 
 [project.urls]
-Homepage = "https://github.com/pyobs/pyobs"
-Documentation = "https://github.com/pyobs/pyobs#readme"
-Repository = "https://github.com/pyobs/pyobs"
+Homepage = "https://github.com/jackylk/obsfs"
+Documentation = "https://github.com/jackylk/obsfs#readme"
+Repository = "https://github.com/jackylk/obsfs"
 
 [tool.setuptools.dynamic]
-version = {attr = "pyobs._version.__version__"}
+version = {attr = "obsfs._version.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

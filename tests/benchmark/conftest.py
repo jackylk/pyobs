@@ -306,6 +306,21 @@ def benchmark_runner(benchmark_config) -> BenchmarkRunner:
     return BenchmarkRunner(benchmark_config)
 
 
+@pytest.fixture(scope="session")
+def obs_rest_client():
+    """Create OBS REST API client for benchmarks."""
+    from benchmarks.obs_rest_client import OBSRestClient
+
+    ak = os.environ.get("OBS_ACCESS_KEY_ID")
+    sk = os.environ.get("OBS_SECRET_ACCESS_KEY")
+    endpoint = os.environ.get("OBS_ENDPOINT")
+
+    if not all([ak, sk, endpoint]):
+        pytest.skip("OBS credentials not configured")
+
+    return OBSRestClient(access_key=ak, secret_key=sk, endpoint=endpoint)
+
+
 # ============================================================================
 # Report Generation
 # ============================================================================
@@ -331,11 +346,53 @@ def _format_throughput(ops_per_sec: float) -> str:
         return f"{ops_per_sec:.0f}"
 
 
+def _result_to_ns_entry(result: BenchmarkResult) -> Dict[str, Any]:
+    """Convert a BenchmarkResult to a benchmark JSON entry with ns + ms metrics."""
+    if result.unit == "ops/sec":
+        mean_ns = 1_000_000_000 / result.mean if result.mean > 0 else 0
+        std_dev_ns = (
+            (1_000_000_000 / (result.mean - result.std_dev) - mean_ns)
+            if result.mean > result.std_dev
+            else 0
+        )
+        median_ns = 1_000_000_000 / result.median if result.median > 0 else 0
+        p99_ns = 1_000_000_000 / result.p99 if result.p99 > 0 else 0
+    elif result.unit == "ms":
+        mean_ns = result.mean * 1_000_000
+        std_dev_ns = result.std_dev * 1_000_000
+        median_ns = result.median * 1_000_000
+        p99_ns = result.p99 * 1_000_000
+    else:
+        mean_ns = result.mean
+        std_dev_ns = result.std_dev
+        median_ns = result.median
+        p99_ns = result.p99
+
+    entry: Dict[str, Any] = {
+        "mean_ns": mean_ns,
+        "std_dev_ns": abs(std_dev_ns),
+        "median_ns": median_ns,
+        "p99_ns": p99_ns,
+        "mean_ms": mean_ns / 1_000_000,
+        "p50_ms": median_ns / 1_000_000,
+        "p99_ms": p99_ns / 1_000_000,
+    }
+    if result.throughput_mbps is not None:
+        entry["throughput_mb_sec"] = result.throughput_mbps
+    if result.data_size is not None:
+        entry["data_size_bytes"] = result.data_size
+    return entry
+
+
 @pytest.fixture(scope="session", autouse=True)
 def generate_report(request, benchmark_runner: BenchmarkRunner):
     """Generate benchmark report after all tests.
 
-    Generates reports in obsfuse-compatible format for project comparison.
+    Outputs to test-reports/:
+      - benchmark-data.json        — all results
+      - rest-benchmark-data.json   — REST API results only (keys match fsspec names)
+      - fs-vs-rest-comparison.json — side-by-side comparison
+      - benchmark-report.md        — human-readable markdown
     """
     yield
 
@@ -345,48 +402,101 @@ def generate_report(request, benchmark_runner: BenchmarkRunner):
     timestamp = datetime.now()
     timestamp_str = timestamp.strftime("%Y-%m-%d %H:%M:%S")
 
-    # Create test-reports directory
     reports_dir = Path(__file__).parent.parent.parent / "test-reports"
     reports_dir.mkdir(exist_ok=True)
 
-    # Generate obsfuse-compatible JSON data (benchmark-data.json)
-    obsfuse_json = {
+    # ----------------------------------------------------------------
+    # 1. Full JSON (benchmark-data.json)
+    # ----------------------------------------------------------------
+    full_json: Dict[str, Any] = {
         "timestamp": timestamp_str,
         "benchmarks": {},
     }
-
     for result in benchmark_runner.results:
-        # Convert to nanoseconds based on unit
-        if result.unit == "ops/sec":
-            mean_ns = 1_000_000_000 / result.mean if result.mean > 0 else 0
-            std_dev_ns = (
-                (1_000_000_000 / (result.mean - result.std_dev) - mean_ns)
-                if result.mean > result.std_dev
-                else 0
-            )
-            median_ns = 1_000_000_000 / result.median if result.median > 0 else 0
-        elif result.unit == "ms":
-            mean_ns = result.mean * 1_000_000
-            std_dev_ns = result.std_dev * 1_000_000
-            median_ns = result.median * 1_000_000
-        else:
-            mean_ns = result.mean
-            std_dev_ns = result.std_dev
-            median_ns = result.median
-
-        # Use benchmark_id with underscores for obsfuse compatibility
         key = result.benchmark_id.replace("/", "_")
-        obsfuse_json["benchmarks"][key] = {
-            "mean_ns": mean_ns,
-            "std_dev_ns": abs(std_dev_ns),
-            "median_ns": median_ns,
-        }
+        entry = _result_to_ns_entry(result)
+        entry["category"] = result.category
+        full_json["benchmarks"][key] = entry
 
     json_path = reports_dir / "benchmark-data.json"
     with open(json_path, "w") as f:
-        json.dump(obsfuse_json, f, indent=4)
+        json.dump(full_json, f, indent=4)
 
-    # Generate obsfuse-compatible Markdown report (benchmark-report.md)
+    # ----------------------------------------------------------------
+    # 2. REST-only JSON (rest-benchmark-data.json)
+    #    Keys strip "obs_rest/" prefix so they match fsspec keys for
+    #    1:1 comparison.  e.g. obs_rest/write_1KB -> write_1KB
+    # ----------------------------------------------------------------
+    rest_results_list = [
+        r for r in benchmark_runner.results if r.category == "obs_rest"
+    ]
+    if rest_results_list:
+        rest_json: Dict[str, Any] = {
+            "timestamp": timestamp_str,
+            "benchmarks": {},
+        }
+        for r in rest_results_list:
+            # obs_rest/write_1KB -> write_1KB
+            canonical = r.benchmark_id.replace("obs_rest/", "")
+            rest_json["benchmarks"][canonical] = _result_to_ns_entry(r)
+        rest_path = reports_dir / "rest-benchmark-data.json"
+        with open(rest_path, "w") as f:
+            json.dump(rest_json, f, indent=4)
+        print(f"  - REST JSON: {rest_path}")
+
+    # ----------------------------------------------------------------
+    # 3. fsspec vs REST comparison JSON
+    # ----------------------------------------------------------------
+    obs_map = {
+        r.benchmark_id.replace("obs/", ""): r
+        for r in benchmark_runner.results
+        if r.category == "obs" and r.unit == "ms"
+    }
+    rest_map = {
+        r.benchmark_id.replace("obs_rest/", ""): r
+        for r in benchmark_runner.results
+        if r.category == "obs_rest" and r.unit == "ms"
+    }
+    common_ops = sorted(set(obs_map.keys()) & set(rest_map.keys()))
+    comparisons: list = []
+    if common_ops:
+        for op in common_ops:
+            fs_r = obs_map[op]
+            rest_r = rest_map[op]
+            fs_mean = fs_r.mean
+            rest_mean = rest_r.mean
+            overhead = (
+                (fs_mean - rest_mean) / rest_mean * 100
+                if rest_mean > 0 else 0
+            )
+            comp_entry: Dict[str, Any] = {
+                "operation": op,
+                "fs_api": {
+                    "mean_ms": round(fs_mean, 4),
+                    "p50_ms": round(fs_r.median, 4),
+                    "p99_ms": round(fs_r.p99, 4),
+                },
+                "rest_api": {
+                    "mean_ms": round(rest_mean, 4),
+                    "p50_ms": round(rest_r.median, 4),
+                    "p99_ms": round(rest_r.p99, 4),
+                },
+                "overhead_pct": round(overhead, 2),
+            }
+            if fs_r.throughput_mbps is not None:
+                comp_entry["fs_api"]["throughput_mb_sec"] = round(fs_r.throughput_mbps, 4)
+            if rest_r.throughput_mbps is not None:
+                comp_entry["rest_api"]["throughput_mb_sec"] = round(rest_r.throughput_mbps, 4)
+            comparisons.append(comp_entry)
+
+        comp_path = reports_dir / "fs-vs-rest-comparison.json"
+        with open(comp_path, "w") as f:
+            json.dump({"timestamp": timestamp_str, "comparisons": comparisons}, f, indent=2)
+        print(f"  - Comparison JSON: {comp_path}")
+
+    # ----------------------------------------------------------------
+    # 4. Markdown report
+    # ----------------------------------------------------------------
     md_path = reports_dir / "benchmark-report.md"
     with open(md_path, "w") as f:
         f.write("# PyOBS Performance Benchmark Report\n\n")
@@ -418,7 +528,6 @@ def generate_report(request, benchmark_runner: BenchmarkRunner):
             f.write("|-----------|------|---------|------------|\n")
 
             for r in results:
-                # Convert to nanoseconds for display
                 if r.unit == "ops/sec":
                     mean_ns = 1_000_000_000 / r.mean if r.mean > 0 else 0
                     std_ns = (
@@ -446,6 +555,17 @@ def generate_report(request, benchmark_runner: BenchmarkRunner):
 
                 f.write(f"| {r.name} | {mean_val} {mean_unit} | ±{std_val} {mean_unit} | {throughput} |\n")
 
+            f.write("\n")
+
+        # fsspec vs REST comparison table
+        if comparisons:
+            f.write("## PyOBS fsspec vs OBS REST API\n\n")
+            f.write("| Operation | fsspec Mean | REST Mean | Overhead |\n")
+            f.write("|-----------|------------|-----------|----------|\n")
+            for c in comparisons:
+                overhead_str = f"{c['overhead_pct']:+.1f}%"
+                f.write(f"| {c['operation']} | {c['fs_api']['mean_ms']:.2f} ms "
+                        f"| {c['rest_api']['mean_ms']:.2f} ms | {overhead_str} |\n")
             f.write("\n")
 
         f.write("## Notes\n\n")

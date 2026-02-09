@@ -25,8 +25,8 @@ import pytest
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from pyobs import OBSFileSystem
-from pyobs.utils import get_parent_path, join_path
+from obsfs import OBSFileSystem
+from obsfs.utils import get_parent_path, join_path
 
 # Import shared benchmark infrastructure from conftest
 from .conftest import BenchmarkConfig, BenchmarkResult, BenchmarkRunner
@@ -387,6 +387,167 @@ class TestOBSBenchmarks:
             data_size=1024 * 1024,
         )
         print(f"\n  Copy 1MB: {result.mean:.2f} ms")
+
+
+# ============================================================================
+# OBS REST API Benchmarks
+# ============================================================================
+
+
+@pytest.mark.obs
+class TestOBSRestBenchmarks:
+    """OBS REST API benchmarks - measures raw HTTP overhead without fsspec."""
+
+    @pytest.fixture(autouse=True)
+    def check_obs(self, request):
+        """Skip if OBS benchmarks not enabled."""
+        if not request.config.getoption("--with-obs", False):
+            pytest.skip("OBS benchmarks not enabled (use --with-obs)")
+
+    def test_obs_rest_write_1kb(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark 1KB file write via REST API."""
+        data = b"x" * 1024
+        counter = [0]
+
+        def op():
+            counter[0] += 1
+            obs_rest_client.put_object(obs_bucket, f"{test_prefix}/rest_write_1kb_{counter[0]}.bin", data)
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/write_1KB", "REST Write 1KB", "obs_rest", op, data_size=1024,
+        )
+        print(f"\n  REST Write 1KB: {result.mean:.2f} ms")
+
+    def test_obs_rest_write_1mb(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark 1MB file write via REST API."""
+        data = b"x" * (1024 * 1024)
+        counter = [0]
+
+        def op():
+            counter[0] += 1
+            obs_rest_client.put_object(obs_bucket, f"{test_prefix}/rest_write_1mb_{counter[0]}.bin", data)
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/write_1MB", "REST Write 1MB", "obs_rest", op, data_size=1024 * 1024,
+        )
+        print(f"\n  REST Write 1MB: {result.mean:.2f} ms")
+
+    def test_obs_rest_read_1kb(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark 1KB file read via REST API."""
+        data = b"x" * 1024
+        key = f"{test_prefix}/rest_read_1kb.bin"
+        obs_rest_client.put_object(obs_bucket, key, data)
+
+        def op():
+            obs_rest_client.get_object(obs_bucket, key)
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/read_1KB", "REST Read 1KB", "obs_rest", op, data_size=1024,
+        )
+        print(f"\n  REST Read 1KB: {result.mean:.2f} ms")
+
+    def test_obs_rest_read_1mb(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark 1MB file read via REST API."""
+        data = b"x" * (1024 * 1024)
+        key = f"{test_prefix}/rest_read_1mb.bin"
+        obs_rest_client.put_object(obs_bucket, key, data)
+
+        def op():
+            obs_rest_client.get_object(obs_bucket, key)
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/read_1MB", "REST Read 1MB", "obs_rest", op, data_size=1024 * 1024,
+        )
+        print(f"\n  REST Read 1MB: {result.mean:.2f} ms")
+
+    def test_obs_rest_stat(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark HEAD (stat) via REST API."""
+        key = f"{test_prefix}/rest_stat_test.bin"
+        obs_rest_client.put_object(obs_bucket, key, b"test")
+
+        def op():
+            obs_rest_client.head_object(obs_bucket, key)
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/stat", "REST Stat (HEAD)", "obs_rest", op,
+        )
+        print(f"\n  REST Stat: {result.mean:.2f} ms")
+
+    def test_obs_rest_exists(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark exists check via REST API."""
+        key = f"{test_prefix}/rest_exists_test.bin"
+        obs_rest_client.put_object(obs_bucket, key, b"test")
+
+        def op():
+            obs_rest_client.exists(obs_bucket, key)
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/exists", "REST Exists (HEAD)", "obs_rest", op,
+        )
+        print(f"\n  REST Exists: {result.mean:.2f} ms")
+
+    def test_obs_rest_list_100(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark listing 100 files via REST API."""
+        list_prefix = f"{test_prefix}/rest_list_100/"
+        for i in range(100):
+            obs_rest_client.put_object(obs_bucket, f"{list_prefix}file_{i:03d}.txt", b"x")
+
+        def op():
+            obs_rest_client.list_objects(obs_bucket, prefix=list_prefix)
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/list_100", "REST List 100 files", "obs_rest", op,
+        )
+        print(f"\n  REST List 100: {result.mean:.2f} ms")
+
+    def test_obs_rest_delete(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark delete via REST API."""
+        counter = [0]
+
+        for i in range(60):
+            obs_rest_client.put_object(obs_bucket, f"{test_prefix}/rest_delete_{i}.bin", b"x")
+
+        def op():
+            counter[0] += 1
+            obs_rest_client.delete_object(obs_bucket, f"{test_prefix}/rest_delete_{counter[0]}.bin")
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/delete", "REST Delete", "obs_rest", op,
+        )
+        print(f"\n  REST Delete: {result.mean:.2f} ms")
+
+    def test_obs_rest_copy(
+        self, benchmark_runner: BenchmarkRunner, obs_rest_client, obs_bucket, test_prefix
+    ):
+        """Benchmark copy via REST API."""
+        src_key = f"{test_prefix}/rest_copy_src.bin"
+        obs_rest_client.put_object(obs_bucket, src_key, b"x" * (1024 * 1024))
+        counter = [0]
+
+        def op():
+            counter[0] += 1
+            obs_rest_client.copy_object(obs_bucket, src_key, f"{test_prefix}/rest_copy_dst_{counter[0]}.bin")
+
+        result = benchmark_runner.run_timed_benchmark(
+            "obs_rest/copy", "REST Copy 1MB", "obs_rest", op, data_size=1024 * 1024,
+        )
+        print(f"\n  REST Copy 1MB: {result.mean:.2f} ms")
 
 
 # ============================================================================

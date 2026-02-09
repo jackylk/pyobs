@@ -49,7 +49,7 @@ def obs_fs():
     if not all([key, secret, endpoint]):
         pytest.skip("OBS credentials not available")
 
-    from pyobs import OBSFileSystem
+    from obsfs import OBSFileSystem
     return OBSFileSystem(key=key, secret=secret, endpoint=endpoint)
 
 

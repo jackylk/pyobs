@@ -318,7 +318,6 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             (1024, "1KB"),
             (64 * 1024, "64KB"),
             (1024 * 1024, "1MB"),
-            (10 * 1024 * 1024, "10MB"),
         ]
 
         # Write benchmarks
@@ -336,7 +335,7 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
                 f"write_{label}",
                 "obs_write",
                 write_func,
-                iterations=20 if size >= 10 * 1024 * 1024 else 50,
+                iterations=20,
                 warmup=2,
                 data_size=size,
             )
@@ -357,31 +356,11 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
                 f"read_{label}",
                 "obs_read",
                 lambda p=path: fs.cat_file(p),
-                iterations=20 if size >= 10 * 1024 * 1024 else 50,
+                iterations=20,
                 warmup=2,
                 data_size=size,
             )
             print(f"  read_{label}: {result.throughput_mb_sec:.2f} MB/s")
-
-        # Range read benchmark
-        print("Running range read benchmark...")
-        large_path = f"{test_prefix}/read_10MB"
-        offset = [0]
-
-        def range_read():
-            start = offset[0]
-            offset[0] = (offset[0] + 65536) % (9 * 1024 * 1024)
-            return fs.cat_file(large_path, start=start, end=start + 65536)
-
-        result = runner.bench(
-            "read_range_64KB",
-            "obs_read",
-            range_read,
-            iterations=50,
-            warmup=5,
-            data_size=65536,
-        )
-        print(f"  read_range_64KB: {result.throughput_mb_sec:.2f} MB/s")
 
         # Metadata operations
         print("Running metadata operation benchmarks...")
@@ -390,16 +369,16 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             "stat",
             "obs_metadata",
             lambda: fs.info(f"{test_prefix}/read_1MB"),
-            iterations=50,
-            warmup=5,
+            iterations=20,
+            warmup=2,
         )
 
         runner.bench(
             "exists",
             "obs_metadata",
             lambda: fs.exists(f"{test_prefix}/read_1MB"),
-            iterations=50,
-            warmup=5,
+            iterations=20,
+            warmup=2,
         )
 
         # Mkdir benchmark
@@ -415,11 +394,11 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             "mkdir",
             "obs_operations",
             mkdir_bench,
-            iterations=30,
-            warmup=3,
+            iterations=10,
+            warmup=2,
         )
 
-        # List benchmarks
+        # List benchmarks - use 100 files for consistency
         print("Preparing files for list benchmark...")
         for i in range(100):
             fs.pipe_file(f"{test_prefix}/list_dir/file_{i:03d}.txt", b"test")
@@ -428,8 +407,8 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             "list_100",
             "obs_metadata",
             lambda: fs.ls(f"{test_prefix}/list_dir/"),
-            iterations=30,
-            warmup=3,
+            iterations=10,
+            warmup=2,
         )
 
         # Delete benchmark
@@ -446,8 +425,8 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             "delete",
             "obs_operations",
             delete_bench,
-            iterations=30,
-            warmup=3,
+            iterations=10,
+            warmup=2,
         )
 
         # Copy benchmark
@@ -463,7 +442,7 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
             "copy",
             "obs_operations",
             copy_bench,
-            iterations=20,
+            iterations=10,
             warmup=2,
         )
 
@@ -472,6 +451,171 @@ def run_obs_benchmarks(runner: BenchmarkRunner) -> None:
         print("\nCleaning up test files...")
         try:
             fs.rm(test_prefix, recursive=True)
+        except Exception as e:
+            print(f"Cleanup warning: {e}")
+
+
+# ============================================================================
+# OBS REST API Benchmarks
+# ============================================================================
+
+def run_obs_rest_benchmarks(runner: BenchmarkRunner) -> None:
+    """Run OBS REST API benchmarks using direct HTTP calls (requires credentials)."""
+    from benchmarks.obs_rest_client import OBSRestClient
+    from pyobs.utils import get_credentials_from_env
+
+    key, secret, endpoint, token = get_credentials_from_env()
+    test_bucket = os.environ.get("OBS_TEST_BUCKET", "obs-fs-test-jska")
+
+    if not all([key, secret, endpoint]):
+        print("Skipping OBS REST benchmarks: credentials not set")
+        return
+
+    print("\n=== OBS REST API Benchmarks ===\n")
+
+    client = OBSRestClient(access_key=key, secret_key=secret, endpoint=endpoint)
+    test_prefix = f"pyobs-rest-bench-{uuid.uuid4().hex[:8]}"
+
+    try:
+        # File sizes for testing (skip large files for speed)
+        sizes = [
+            (1024, "1KB"),
+            (64 * 1024, "64KB"),
+            (1024 * 1024, "1MB"),
+        ]
+
+        # Write benchmarks
+        print("Running REST write benchmarks...")
+        for size, label in sizes:
+            data = b"x" * size
+            counter = [0]
+
+            def write_func(d=data, lbl=label):
+                counter[0] += 1
+                client.put_object(test_bucket, f"{test_prefix}/rest_write_{lbl}_{counter[0]}", d)
+
+            result = runner.bench(
+                f"rest_write_{label}",
+                "obs_rest_write",
+                write_func,
+                iterations=20,
+                warmup=2,
+                data_size=size,
+            )
+            print(f"  rest_write_{label}: {result.throughput_mb_sec:.2f} MB/s")
+
+        # Prepare files for read benchmarks
+        print("Preparing files for REST read benchmarks...")
+        for size, label in sizes:
+            data = b"y" * size
+            client.put_object(test_bucket, f"{test_prefix}/rest_read_{label}", data)
+
+        # Read benchmarks
+        print("Running REST read benchmarks...")
+        for size, label in sizes:
+            obj_key = f"{test_prefix}/rest_read_{label}"
+
+            result = runner.bench(
+                f"rest_read_{label}",
+                "obs_rest_read",
+                lambda k=obj_key: client.get_object(test_bucket, k),
+                iterations=20,
+                warmup=2,
+                data_size=size,
+            )
+            print(f"  rest_read_{label}: {result.throughput_mb_sec:.2f} MB/s")
+
+        # Metadata operations
+        print("Running REST metadata benchmarks...")
+
+        runner.bench(
+            "rest_stat",
+            "obs_rest_metadata",
+            lambda: client.head_object(test_bucket, f"{test_prefix}/rest_read_1MB"),
+            iterations=20,
+            warmup=2,
+        )
+
+        runner.bench(
+            "rest_exists",
+            "obs_rest_metadata",
+            lambda: client.exists(test_bucket, f"{test_prefix}/rest_read_1MB"),
+            iterations=20,
+            warmup=2,
+        )
+
+        # Mkdir benchmark
+        print("Running REST mkdir benchmark...")
+        mkdir_counter = [0]
+
+        def rest_mkdir_bench():
+            key = f"{test_prefix}/rest_mkdir_bench_{mkdir_counter[0]}/"
+            mkdir_counter[0] += 1
+            client.mkdir(test_bucket, key)
+
+        runner.bench(
+            "rest_mkdir",
+            "obs_rest_operations",
+            rest_mkdir_bench,
+            iterations=10,
+            warmup=2,
+        )
+
+        # List benchmark - use 100 files for consistency
+        print("Preparing files for REST list benchmark...")
+        for i in range(100):
+            client.put_object(test_bucket, f"{test_prefix}/rest_list_dir/file_{i:03d}.txt", b"test")
+
+        runner.bench(
+            "rest_list_100",
+            "obs_rest_metadata",
+            lambda: client.list_objects(test_bucket, prefix=f"{test_prefix}/rest_list_dir/"),
+            iterations=10,
+            warmup=2,
+        )
+
+        # Delete benchmark
+        print("Running REST delete benchmark...")
+        delete_counter = [0]
+
+        def delete_bench():
+            key = f"{test_prefix}/rest_delete_{delete_counter[0]}"
+            delete_counter[0] += 1
+            client.put_object(test_bucket, key, b"to delete")
+            client.delete_object(test_bucket, key)
+
+        runner.bench(
+            "rest_delete",
+            "obs_rest_operations",
+            delete_bench,
+            iterations=10,
+            warmup=2,
+        )
+
+        # Copy benchmark
+        print("Running REST copy benchmark...")
+        copy_counter = [0]
+
+        def copy_bench():
+            dst_key = f"{test_prefix}/rest_copy_dst_{copy_counter[0]}"
+            copy_counter[0] += 1
+            client.copy_object(test_bucket, f"{test_prefix}/rest_read_1MB", dst_key)
+
+        runner.bench(
+            "rest_copy",
+            "obs_rest_operations",
+            copy_bench,
+            iterations=10,
+            warmup=2,
+        )
+
+    finally:
+        # Cleanup
+        print("\nCleaning up REST test files...")
+        try:
+            objects = client.list_objects(test_bucket, prefix=test_prefix)
+            for obj in objects:
+                client.delete_object(test_bucket, obj["Key"])
         except Exception as e:
             print(f"Cleanup warning: {e}")
 
@@ -600,30 +744,132 @@ def run_concurrent_benchmarks(runner: BenchmarkRunner) -> None:
 # Report Generation
 # ============================================================================
 
+def _result_to_benchmark_entry(r: BenchmarkResult) -> Dict[str, Any]:
+    """Convert a BenchmarkResult to a benchmark JSON entry."""
+    entry: Dict[str, Any] = {
+        "mean_ns": r.mean_time_sec * 1e9,
+        "std_dev_ns": r.std_dev_sec * 1e9,
+        "median_ns": r.median_time_sec * 1e9,
+        "min_ns": r.min_time_sec * 1e9,
+        "max_ns": r.max_time_sec * 1e9,
+        "p50_ns": r.p50_sec * 1e9,
+        "p95_ns": r.p95_sec * 1e9,
+        "p99_ns": r.p99_sec * 1e9,
+        "mean_ms": r.mean_time_sec * 1000,
+        "p50_ms": r.p50_sec * 1000,
+        "p99_ms": r.p99_sec * 1000,
+        "ops_per_sec": r.ops_per_sec,
+        "iterations": r.iterations,
+    }
+    if r.throughput_mb_sec is not None:
+        entry["throughput_mb_sec"] = r.throughput_mb_sec
+    if r.data_size_bytes is not None:
+        entry["data_size_bytes"] = r.data_size_bytes
+    return entry
+
+
 def generate_report(report: BenchmarkReport, output_dir: Path) -> None:
-    """Generate benchmark reports in multiple formats."""
+    """Generate benchmark reports in multiple formats.
+
+    Outputs:
+      - benchmark-data.json        — full report (all results)
+      - rest-benchmark-data.json   — REST API results only, keys match fsspec names
+      - fs-vs-rest-comparison.json — side-by-side comparison
+      - benchmark-report.md        — human-readable markdown
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # JSON report (full)
+    # ----------------------------------------------------------------
+    # 1. Full JSON report
+    # ----------------------------------------------------------------
     json_path = output_dir / "benchmark-data.json"
+    full_json: Dict[str, Any] = {
+        "timestamp": report.timestamp,
+        "environment": report.environment,
+        "benchmarks": {},
+    }
+    for r in report.results:
+        full_json["benchmarks"][r.name] = _result_to_benchmark_entry(r)
+        full_json["benchmarks"][r.name]["category"] = r.category
     with open(json_path, "w") as f:
-        json.dump(asdict(report), f, indent=2, default=str)
+        json.dump(full_json, f, indent=2)
     print(f"JSON report: {json_path}")
 
-    # Simplified JSON (compatible with obsfuse format for comparison site)
-    simple_path = output_dir / "benchmark-simple.json"
-    benchmarks = {}
-    for r in report.results:
-        benchmarks[r.name] = {
-            "mean_ns": r.mean_time_sec * 1e9,
-            "std_dev_ns": r.std_dev_sec * 1e9,
-            "median_ns": r.median_time_sec * 1e9,
+    # ----------------------------------------------------------------
+    # 2. REST-only JSON  (keys WITHOUT "rest_" prefix so they match
+    #    the fsspec keys for 1:1 comparison)
+    # ----------------------------------------------------------------
+    rest_benchmarks = [r for r in report.results if r.category.startswith("obs_rest_")]
+    if rest_benchmarks:
+        rest_json: Dict[str, Any] = {
+            "timestamp": report.timestamp,
+            "environment": report.environment,
+            "benchmarks": {},
         }
-    with open(simple_path, "w") as f:
-        json.dump({"timestamp": report.timestamp, "benchmarks": benchmarks}, f, indent=2)
-    print(f"Simple JSON report: {simple_path}")
+        for r in rest_benchmarks:
+            # rest_write_1KB -> write_1KB, rest_stat -> stat, etc.
+            canonical_name = r.name
+            if canonical_name.startswith("rest_"):
+                canonical_name = canonical_name[len("rest_"):]
+            rest_json["benchmarks"][canonical_name] = _result_to_benchmark_entry(r)
+        rest_path = output_dir / "rest-benchmark-data.json"
+        with open(rest_path, "w") as f:
+            json.dump(rest_json, f, indent=2)
+        print(f"REST JSON report: {rest_path}")
 
-    # Markdown report
+    # ----------------------------------------------------------------
+    # 3. fsspec vs REST comparison JSON
+    # ----------------------------------------------------------------
+    # Build lookup: fsspec results (category obs_*  but NOT obs_rest_* / obs_concurrent)
+    fs_map = {
+        r.name: r for r in report.results
+        if r.category.startswith("obs_")
+        and not r.category.startswith("obs_rest_")
+        and not r.category.startswith("obs_concurrent")
+    }
+    # REST results keyed by canonical name (strip "rest_" prefix)
+    rest_map: Dict[str, BenchmarkResult] = {}
+    for r in rest_benchmarks:
+        key = r.name[len("rest_"):] if r.name.startswith("rest_") else r.name
+        rest_map[key] = r
+
+    common_ops = sorted(set(fs_map.keys()) & set(rest_map.keys()))
+    comparisons: List[Dict[str, Any]] = []
+    if common_ops:
+        for op in common_ops:
+            fs_r = fs_map[op]
+            rest_r = rest_map[op]
+            fs_mean_ms = fs_r.mean_time_sec * 1000
+            rest_mean_ms = rest_r.mean_time_sec * 1000
+            overhead = (
+                (fs_mean_ms - rest_mean_ms) / rest_mean_ms * 100
+                if rest_mean_ms > 0 else 0
+            )
+            comparisons.append({
+                "operation": op,
+                "fs_api": {
+                    "mean_ms": round(fs_mean_ms, 4),
+                    "p50_ms": round(fs_r.p50_sec * 1000, 4),
+                    "p99_ms": round(fs_r.p99_sec * 1000, 4),
+                    "throughput_mb_sec": fs_r.throughput_mb_sec,
+                },
+                "rest_api": {
+                    "mean_ms": round(rest_mean_ms, 4),
+                    "p50_ms": round(rest_r.p50_sec * 1000, 4),
+                    "p99_ms": round(rest_r.p99_sec * 1000, 4),
+                    "throughput_mb_sec": rest_r.throughput_mb_sec,
+                },
+                "overhead_pct": round(overhead, 2),
+            })
+
+        comp_path = output_dir / "fs-vs-rest-comparison.json"
+        with open(comp_path, "w") as f:
+            json.dump({"timestamp": report.timestamp, "comparisons": comparisons}, f, indent=2)
+        print(f"Comparison JSON: {comp_path}")
+
+    # ----------------------------------------------------------------
+    # 4. Markdown report
+    # ----------------------------------------------------------------
     md_path = output_dir / "benchmark-report.md"
     with open(md_path, "w") as f:
         f.write("# PyOBS Performance Benchmark Report\n\n")
@@ -637,7 +883,7 @@ def generate_report(report: BenchmarkReport, output_dir: Path) -> None:
         f.write("\n")
 
         f.write("## Summary\n\n")
-        categories = {}
+        categories: Dict[str, List[BenchmarkResult]] = {}
         for r in report.results:
             if r.category not in categories:
                 categories[r.category] = []
@@ -650,7 +896,6 @@ def generate_report(report: BenchmarkReport, output_dir: Path) -> None:
             f.write(f"## {category.replace('_', ' ').title()}\n\n")
 
             has_throughput = any(r.throughput_mb_sec for r in results)
-            has_concurrency = any(r.concurrency for r in results)
 
             if has_throughput:
                 f.write("| Benchmark | Mean | P50 | P99 | ops/sec | MB/s |\n")
@@ -674,7 +919,6 @@ def generate_report(report: BenchmarkReport, output_dir: Path) -> None:
         if concurrent_results:
             f.write("## Concurrent Scaling Analysis\n\n")
 
-            # Group by operation type
             read_results = [r for r in concurrent_results if "read" in r.name and "mixed" not in r.name]
             write_results = [r for r in concurrent_results if "write" in r.name and "mixed" not in r.name]
 
@@ -701,6 +945,20 @@ def generate_report(report: BenchmarkReport, output_dir: Path) -> None:
                             efficiency = (r.throughput_mb_sec / (base.throughput_mb_sec * r.concurrency)) * 100
                             f.write(f"| {r.concurrency} | {r.throughput_mb_sec:.2f} | {efficiency:.1f}% |\n")
                     f.write("\n")
+
+        # fsspec vs REST comparison table
+        if comparisons:
+            f.write("## PyOBS fsspec vs OBS REST API\n\n")
+            f.write("| Operation | fsspec Mean | REST Mean | Overhead | fsspec MB/s | REST MB/s |\n")
+            f.write("|-----------|------------|-----------|----------|-------------|----------|\n")
+            for c in comparisons:
+                overhead_str = f"{c['overhead_pct']:+.1f}%"
+                fs_tp = f"{c['fs_api']['throughput_mb_sec']:.2f}" if c['fs_api']['throughput_mb_sec'] else "-"
+                rest_tp = f"{c['rest_api']['throughput_mb_sec']:.2f}" if c['rest_api']['throughput_mb_sec'] else "-"
+                f.write(f"| {c['operation']} | {c['fs_api']['mean_ms']:.3f}ms "
+                        f"| {c['rest_api']['mean_ms']:.3f}ms | {overhead_str} "
+                        f"| {fs_tp} | {rest_tp} |\n")
+            f.write("\n")
 
     print(f"Markdown report: {md_path}")
 
@@ -801,9 +1059,10 @@ def main():
     parser = argparse.ArgumentParser(description="PyOBS Benchmark Suite")
     parser.add_argument("--local-only", action="store_true", help="Run only local benchmarks")
     parser.add_argument("--obs-only", action="store_true", help="Run only OBS integration benchmarks")
+    parser.add_argument("--rest-only", action="store_true", help="Run only OBS REST API benchmarks")
     parser.add_argument("--concurrent-only", action="store_true", help="Run only concurrent benchmarks")
     parser.add_argument("--report", action="store_true", help="Generate reports")
-    parser.add_argument("--output", type=str, default="perf", help="Output directory for reports")
+    parser.add_argument("--output", type=str, default="test-reports", help="Output directory for reports")
     parser.add_argument("--compare", action="store_true", help="Generate comparison with obsfuse")
     args = parser.parse_args()
 
@@ -813,15 +1072,22 @@ def main():
 
     runner = BenchmarkRunner(warmup=5, iterations=100)
 
-    run_local = not args.obs_only and not args.concurrent_only
-    run_obs = not args.local_only and not args.concurrent_only
-    run_concurrent = not args.local_only and not args.obs_only or args.concurrent_only
+    only_flags = [args.local_only, args.obs_only, args.rest_only, args.concurrent_only]
+    any_only = any(only_flags)
+
+    run_local = not any_only or args.local_only
+    run_obs = not any_only or args.obs_only
+    run_rest = not any_only or args.rest_only or args.obs_only
+    run_concurrent = not any_only or args.concurrent_only
 
     if run_local:
         run_local_benchmarks(runner)
 
     if run_obs:
         run_obs_benchmarks(runner)
+
+    if run_rest:
+        run_obs_rest_benchmarks(runner)
 
     if run_concurrent:
         run_concurrent_benchmarks(runner)
