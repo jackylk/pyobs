@@ -88,3 +88,6 @@ credentials.json
 secrets.json
 *.pem
 *.key
+
+# Claude Code settings
+.claude/

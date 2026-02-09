@@ -1,86 +1,101 @@
 # PyOBS Performance Benchmark Report
 
-**Generated:** 2026-02-06 16:26:36
+**Generated:** 2026-02-08T21:32:22.566596
 
 ## Test Environment
 
 | Property | Value |
 |----------|-------|
-| Platform | macOS-12.7.6-x86_64-i386-64bit-Mach-O |
-| Python | 3.13.5 |
-| CPU Count | 8 |
-| Mode | quick |
+| os | Darwin |
+| os_version | 21.6.0 |
+| python_version | 3.13.5 |
+| cpu | i386 |
+| cpu_count | 8 |
+| machine | x86_64 |
 
 ## Summary
 
-All benchmarks measure the time taken for individual operations. Lower is better.
+- Total benchmarks: 24
+- Categories: obs_write, obs_read, obs_metadata, obs_operations, obs_rest_write, obs_rest_read, obs_rest_metadata, obs_rest_operations
 
-## Benchmark Results
+## Obs Write
 
-### Local Operations
+| Benchmark | Mean | P50 | P99 | ops/sec | MB/s |
+|-----------|------|-----|-----|---------|------|
+| write_1KB | 197.085ms | 196.833ms | 215.959ms | 5.1 | 0.00 |
+| write_64KB | 268.123ms | 270.614ms | 278.105ms | 3.7 | 0.23 |
+| write_1MB | 461.372ms | 454.778ms | 522.695ms | 2.2 | 2.17 |
 
-| Benchmark | Mean | Std Dev | Throughput |
-|-----------|------|---------|------------|
-| Join paths | 199.01 ns | ±12.09 ns | 5,024,864 ops/s |
-| Get parent path | 451.91 ns | ±107.60 ns | 2,212,843 ops/s |
-| Get filename | 240.98 ns | ±19.87 ns | 4,149,712 ops/s |
+## Obs Read
 
-### Cache Operations
+| Benchmark | Mean | P50 | P99 | ops/sec | MB/s |
+|-----------|------|-----|-----|---------|------|
+| read_1KB | 191.837ms | 191.342ms | 212.891ms | 5.2 | 0.01 |
+| read_64KB | 281.009ms | 278.745ms | 323.792ms | 3.6 | 0.22 |
+| read_1MB | 455.643ms | 455.201ms | 504.189ms | 2.2 | 2.19 |
 
-| Benchmark | Mean | Std Dev | Throughput |
-|-----------|------|---------|------------|
-| Create inode | 3.51 µs | ±867.85 µs | 285,040 ops/s |
-| Lookup existing inode | 643.06 ns | ±235.60 ns | 1,555,064 ops/s |
-| Get path from inode | 480.65 ns | ±29.66 ns | 2,080,536 ops/s |
-| Update inode size | 753.74 ns | ±54.91 ns | 1,326,714 ops/s |
-| Rename inode | 2.29 µs | ±380.03 µs | 437,104 ops/s |
-| Put metadata | 3.08 µs | ±493.45 µs | 324,262 ops/s |
-| Get metadata (hit) | 879.67 ns | ±102.48 ns | 1,136,789 ops/s |
-| Get metadata (miss) | 663.09 ns | ±9.86 ns | 1,508,101 ops/s |
-| Put directory listing | 3.86 µs | ±127.17 µs | 258,875 ops/s |
-| Get directory (hit) | 778.34 ns | ±4.26 ns | 1,284,780 ops/s |
-| Put 4KB block | 2.84 µs | ±53.08 µs | 352,040 ops/s |
-| Put 64KB block | 4.39 µs | ±2.71 µs | 227,620 ops/s |
-| Get 4KB block (hit) | 1.77 µs | ±34.37 µs | 564,422 ops/s |
-| Get 64KB block (hit) | 1.98 µs | ±353.03 µs | 503,865 ops/s |
-| Invalidate inode cache | 226.45 µs | ±15.94 µs | 4,416 ops/s |
-| Join paths | 184.70 ns | ±18.00 ns | 5,414,156 ops/s |
-| Get parent path | 307.64 ns | ±1.35 ns | 3,250,598 ops/s |
-| Get file name | 202.18 ns | ±12.73 ns | 4,946,010 ops/s |
-| Join deep paths | 176.30 ns | ±18.63 ns | 5,672,091 ops/s |
-| Get deep parent path | 372.62 ns | ±126.41 ns | 2,683,692 ops/s |
-| Record read | 1.06 µs | ±151.06 µs | 944,255 ops/s |
-| Sequential detection | 1.70 µs | ±992.08 µs | 589,180 ops/s |
-| Store prefetch | 1.55 µs | ±257.44 µs | 643,541 ops/s |
-| Get prefetch (hit) | 1.91 µs | ±45.79 µs | 522,713 ops/s |
+## Obs Metadata
 
-### Concurrent Operations
+| Benchmark | Mean | P50 | P99 | ops/sec |
+|-----------|------|-----|-----|--------|
+| stat | 188.406ms | 188.767ms | 198.780ms | 5.3 |
+| exists | 194.839ms | 191.261ms | 288.976ms | 5.1 |
+| list_100 | 243.429ms | 242.571ms | 254.506ms | 4.1 |
 
-| Benchmark | Mean | Std Dev | Throughput |
-|-----------|------|---------|------------|
-| Concurrent inode create (1 threads) | 46.93 µs | ±6.95 µs | 21,310 ops/s |
-| Concurrent inode create (2 threads) | 34.24 µs | ±1.91 µs | 29,205 ops/s |
-| Concurrent inode create (4 threads) | 32.28 µs | ±1.00 µs | 30,978 ops/s |
-| Concurrent inode create (8 threads) | 32.22 µs | ±1.28 µs | 31,036 ops/s |
-| Concurrent inode lookup (1 threads) | 19.58 µs | ±5.11 µs | 51,076 ops/s |
-| Concurrent inode lookup (2 threads) | 16.41 µs | ±459.28 µs | 60,941 ops/s |
-| Concurrent inode lookup (4 threads) | 15.87 µs | ±578.32 µs | 63,009 ops/s |
-| Concurrent inode lookup (8 threads) | 23.25 µs | ±10.37 µs | 43,003 ops/s |
-| Concurrent cache get (1 threads) | 24.24 µs | ±4.59 µs | 41,252 ops/s |
-| Concurrent cache get (2 threads) | 22.54 µs | ±1.46 µs | 44,366 ops/s |
-| Concurrent cache get (4 threads) | 21.03 µs | ±3.78 µs | 47,543 ops/s |
-| Concurrent cache get (8 threads) | 18.67 µs | ±640.62 µs | 53,568 ops/s |
-| Concurrent cache put (1 threads) | 22.75 µs | ±816.10 µs | 43,962 ops/s |
-| Concurrent cache put (2 threads) | 22.36 µs | ±824.61 µs | 44,718 ops/s |
-| Concurrent cache put (4 threads) | 27.41 µs | ±83.12 µs | 36,485 ops/s |
-| Concurrent cache put (8 threads) | 21.94 µs | ±3.54 µs | 45,574 ops/s |
+## Obs Operations
 
-## Notes
+| Benchmark | Mean | P50 | P99 | ops/sec |
+|-----------|------|-----|-----|--------|
+| mkdir | 379.582ms | 383.365ms | 408.988ms | 2.6 |
+| delete | 379.201ms | 372.624ms | 421.029ms | 2.6 |
+| copy | 231.518ms | 208.051ms | 465.408ms | 4.3 |
 
-- All times are in nanoseconds unless otherwise specified
-- Throughput calculated as operations per second
-- OBS integration tests require network access and valid credentials
+## Obs Rest Write
 
----
+| Benchmark | Mean | P50 | P99 | ops/sec | MB/s |
+|-----------|------|-----|-----|---------|------|
+| rest_write_1KB | 50.647ms | 46.213ms | 120.676ms | 19.7 | 0.02 |
+| rest_write_64KB | 48.076ms | 47.750ms | 57.905ms | 20.8 | 1.30 |
+| rest_write_1MB | 96.516ms | 84.072ms | 344.376ms | 10.4 | 10.36 |
 
-*Report generated by PyOBS benchmark suite*
+## Obs Rest Read
+
+| Benchmark | Mean | P50 | P99 | ops/sec | MB/s |
+|-----------|------|-----|-----|---------|------|
+| rest_read_1KB | 51.076ms | 45.187ms | 113.627ms | 19.6 | 0.02 |
+| rest_read_64KB | 88.095ms | 65.501ms | 515.857ms | 11.4 | 0.71 |
+| rest_read_1MB | 80.312ms | 78.828ms | 106.736ms | 12.5 | 12.45 |
+
+## Obs Rest Metadata
+
+| Benchmark | Mean | P50 | P99 | ops/sec |
+|-----------|------|-----|-----|--------|
+| rest_stat | 46.518ms | 44.236ms | 86.726ms | 21.5 |
+| rest_exists | 44.951ms | 44.537ms | 47.857ms | 22.2 |
+| rest_list_100 | 58.290ms | 58.317ms | 59.431ms | 17.2 |
+
+## Obs Rest Operations
+
+| Benchmark | Mean | P50 | P99 | ops/sec |
+|-----------|------|-----|-----|--------|
+| rest_mkdir | 46.924ms | 46.169ms | 54.124ms | 21.3 |
+| rest_delete | 97.002ms | 92.728ms | 134.392ms | 10.3 |
+| rest_copy | 67.099ms | 61.147ms | 113.214ms | 14.9 |
+
+## PyOBS fsspec vs OBS REST API
+
+| Operation | fsspec Mean | REST Mean | Overhead | fsspec MB/s | REST MB/s |
+|-----------|------------|-----------|----------|-------------|----------|
+| copy | 231.518ms | 67.099ms | +245.0% | - | - |
+| delete | 379.201ms | 97.002ms | +290.9% | - | - |
+| exists | 194.839ms | 44.951ms | +333.4% | - | - |
+| list_100 | 243.429ms | 58.290ms | +317.6% | - | - |
+| mkdir | 379.582ms | 46.924ms | +708.9% | - | - |
+| read_1KB | 191.837ms | 51.076ms | +275.6% | 0.01 | 0.02 |
+| read_1MB | 455.643ms | 80.312ms | +467.3% | 2.19 | 12.45 |
+| read_64KB | 281.009ms | 88.094ms | +219.0% | 0.22 | 0.71 |
+| stat | 188.406ms | 46.518ms | +305.0% | - | - |
+| write_1KB | 197.085ms | 50.647ms | +289.1% | 0.00 | 0.02 |
+| write_1MB | 461.372ms | 96.516ms | +378.0% | 2.17 | 10.36 |
+| write_64KB | 268.123ms | 48.076ms | +457.7% | 0.23 | 1.30 |
+

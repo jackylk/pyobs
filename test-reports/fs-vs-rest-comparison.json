@@ -1,0 +1,197 @@
+{
+  "timestamp": "2026-02-08T21:32:22.566596",
+  "comparisons": [
+    {
+      "operation": "copy",
+      "fs_api": {
+        "mean_ms": 231.5183,
+        "p50_ms": 208.0513,
+        "p99_ms": 465.4079,
+        "throughput_mb_sec": null
+      },
+      "rest_api": {
+        "mean_ms": 67.0993,
+        "p50_ms": 61.1467,
+        "p99_ms": 113.2139,
+        "throughput_mb_sec": null
+      },
+      "overhead_pct": 245.04
+    },
+    {
+      "operation": "delete",
+      "fs_api": {
+        "mean_ms": 379.201,
+        "p50_ms": 372.6245,
+        "p99_ms": 421.029,
+        "throughput_mb_sec": null
+      },
+      "rest_api": {
+        "mean_ms": 97.0018,
+        "p50_ms": 92.7282,
+        "p99_ms": 134.3924,
+        "throughput_mb_sec": null
+      },
+      "overhead_pct": 290.92
+    },
+    {
+      "operation": "exists",
+      "fs_api": {
+        "mean_ms": 194.839,
+        "p50_ms": 191.2615,
+        "p99_ms": 288.9758,
+        "throughput_mb_sec": null
+      },
+      "rest_api": {
+        "mean_ms": 44.951,
+        "p50_ms": 44.537,
+        "p99_ms": 47.8574,
+        "throughput_mb_sec": null
+      },
+      "overhead_pct": 333.45
+    },
+    {
+      "operation": "list_100",
+      "fs_api": {
+        "mean_ms": 243.4285,
+        "p50_ms": 242.5706,
+        "p99_ms": 254.5057,
+        "throughput_mb_sec": null
+      },
+      "rest_api": {
+        "mean_ms": 58.2899,
+        "p50_ms": 58.3172,
+        "p99_ms": 59.4311,
+        "throughput_mb_sec": null
+      },
+      "overhead_pct": 317.62
+    },
+    {
+      "operation": "mkdir",
+      "fs_api": {
+        "mean_ms": 379.5821,
+        "p50_ms": 383.3647,
+        "p99_ms": 408.988,
+        "throughput_mb_sec": null
+      },
+      "rest_api": {
+        "mean_ms": 46.9236,
+        "p50_ms": 46.1694,
+        "p99_ms": 54.1239,
+        "throughput_mb_sec": null
+      },
+      "overhead_pct": 708.94
+    },
+    {
+      "operation": "read_1KB",
+      "fs_api": {
+        "mean_ms": 191.8366,
+        "p50_ms": 191.3419,
+        "p99_ms": 212.8906,
+        "throughput_mb_sec": 0.005090595407854564
+      },
+      "rest_api": {
+        "mean_ms": 51.0761,
+        "p50_ms": 45.1866,
+        "p99_ms": 113.6268,
+        "throughput_mb_sec": 0.019119751009511188
+      },
+      "overhead_pct": 275.59
+    },
+    {
+      "operation": "read_1MB",
+      "fs_api": {
+        "mean_ms": 455.643,
+        "p50_ms": 455.2009,
+        "p99_ms": 504.1891,
+        "throughput_mb_sec": 2.1947006124091057
+      },
+      "rest_api": {
+        "mean_ms": 80.3123,
+        "p50_ms": 78.8281,
+        "p99_ms": 106.7364,
+        "throughput_mb_sec": 12.45139220847947
+      },
+      "overhead_pct": 467.34
+    },
+    {
+      "operation": "read_64KB",
+      "fs_api": {
+        "mean_ms": 281.0087,
+        "p50_ms": 278.7446,
+        "p99_ms": 323.7924,
+        "throughput_mb_sec": 0.22241301209820927
+      },
+      "rest_api": {
+        "mean_ms": 88.0945,
+        "p50_ms": 65.5007,
+        "p99_ms": 515.8573,
+        "throughput_mb_sec": 0.7094650625669388
+      },
+      "overhead_pct": 218.99
+    },
+    {
+      "operation": "stat",
+      "fs_api": {
+        "mean_ms": 188.4061,
+        "p50_ms": 188.7665,
+        "p99_ms": 198.7796,
+        "throughput_mb_sec": null
+      },
+      "rest_api": {
+        "mean_ms": 46.5178,
+        "p50_ms": 44.2359,
+        "p99_ms": 86.7255,
+        "throughput_mb_sec": null
+      },
+      "overhead_pct": 305.02
+    },
+    {
+      "operation": "write_1KB",
+      "fs_api": {
+        "mean_ms": 197.0848,
+        "p50_ms": 196.8333,
+        "p99_ms": 215.9593,
+        "throughput_mb_sec": 0.004955037793606251
+      },
+      "rest_api": {
+        "mean_ms": 50.6467,
+        "p50_ms": 46.2126,
+        "p99_ms": 120.6765,
+        "throughput_mb_sec": 0.019281852256573386
+      },
+      "overhead_pct": 289.14
+    },
+    {
+      "operation": "write_1MB",
+      "fs_api": {
+        "mean_ms": 461.3718,
+        "p50_ms": 454.7775,
+        "p99_ms": 522.6953,
+        "throughput_mb_sec": 2.167449498457665
+      },
+      "rest_api": {
+        "mean_ms": 96.5163,
+        "p50_ms": 84.0718,
+        "p99_ms": 344.3759,
+        "throughput_mb_sec": 10.360939339893342
+      },
+      "overhead_pct": 378.02
+    },
+    {
+      "operation": "write_64KB",
+      "fs_api": {
+        "mean_ms": 268.1228,
+        "p50_ms": 270.6142,
+        "p99_ms": 278.1053,
+        "throughput_mb_sec": 0.2331021767267271
+      },
+      "rest_api": {
+        "mean_ms": 48.0759,
+        "p50_ms": 47.7497,
+        "p99_ms": 57.9051,
+        "throughput_mb_sec": 1.3000285934915543
+      },
+      "overhead_pct": 457.71
+    }
+  ]
+}

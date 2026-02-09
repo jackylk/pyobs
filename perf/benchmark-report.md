@@ -1,0 +1,20 @@
+# PyOBS Performance Benchmark Report
+
+**Generated:** 2026-02-07T21:23:52.806386
+
+## Test Environment
+
+| Property | Value |
+|----------|-------|
+| os | Darwin |
+| os_version | 21.6.0 |
+| python_version | 3.13.5 |
+| cpu | i386 |
+| cpu_count | 8 |
+| machine | x86_64 |
+
+## Summary
+
+- Total benchmarks: 0
+- Categories: 
+
